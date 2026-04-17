@@ -713,6 +713,7 @@ function sendByMail(doc, data){
     var body=encodeURIComponent("Bonjour,\n\nVeuillez trouver ci-joint le bilan de passage du magasin "+(data.magasin||"")+" du "+(data.date||"")+".\n\nBien cordialement,\n"+(data.animateur||""));
     var mailto="mailto:"+dest.join(",")+"?subject="+subject+"&body="+body;
     doc.save('Bilan_'+(data.magasin||'magasin')+'_'+(data.date||'').replace(/\//g,'-')+'.pdf');
+    setTimeout(function(){window.location.href=mailto;},1200);
     showSent(data);
     return;
   }
@@ -740,17 +741,11 @@ function showSent(data){
   try{localStorage.removeItem("oc_draft");}catch(e){}
   document.getElementById("sent-mag").textContent=data.magasin||"ce magasin";
   document.getElementById("sent-date").textContent=new Date().toLocaleDateString("fr-FR",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
-  var dest=[data.emailAnim,data.emailDir,data.emailResp].filter(Boolean);
-  var subject=encodeURIComponent("Bilan de Passage N°"+(data.passage||"1")+" — "+(data.magasin||"")+" — "+(data.date||""));
-  var body=encodeURIComponent("Bonjour,\n\nVeuillez trouver ci-joint le bilan de passage N°"+(data.passage||"1")+" du magasin "+(data.magasin||"")+" du "+(data.date||"")+"\n\nBien cordialement,\n"+(data.animateur||""));
-  var ml=document.getElementById("mailto-link");
-  if(ml&&dest.length){ml.href="mailto:"+dest.join(",")+"?subject="+subject+"&body="+body;}
-  else if(ml){ml.style.display="none";}
   document.querySelectorAll(".view").forEach(function(vv){vv.classList.remove("on");});
   document.getElementById("p-sent").classList.add("on");
   document.getElementById("prog-wrap").style.display="none";
   document.getElementById("nav-back").style.visibility="hidden";
-  document.getElementById("nav-title").textContent="PDF généré";
+  document.getElementById("nav-title").textContent="Bilan envoyé";
 }
 
 function submitForm(){
@@ -872,24 +867,20 @@ function rebuildDynamic(){
   // Actions
   var al=document.getElementById("actions-list");
   if(al){
-    al.innerHTML="";
-    var aOpts='<option value="">— Choisir une action —</option>';
-    params.actions.forEach(function(a){
-      var lbl=typeof a==="object"?a.tache:a;
-      aOpts+='<option value="'+lbl+'">'+lbl+'</option>';
-    });
-    [0,1,2].forEach(function(i){
-      var d=document.createElement("div");
-      d.style.cssText="padding:12px 14px;"+(i<2?"border-bottom:.5px solid #e5e5ea;":"");
+    al.innerHTML='<div class="snote">Coche les actions du jour</div>';
+    params.actions.forEach(function(a,i){
+      var obj=typeof a==="object"?a:{tache:a,impact:""};
+      var d=document.createElement("div");d.className="arow";d.style.opacity="0.4";
       d.innerHTML=
-        '<div style="font-size:11px;color:#8E8E93;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Action '+(i+1)+'</div>'+
-        '<select class="act-sel fi" data-i="'+i+'" style="width:100%;margin-bottom:8px;border-bottom:.5px solid #e5e5ea;padding-bottom:6px;">'+aOpts+'</select>'+
-        '<input type="text" class="act-impact fi" data-i="'+i+'" placeholder="Impact / Urgence (optionnel)" style="width:100%;color:#E07B27;margin-bottom:8px;border-bottom:.5px solid #e5e5ea;padding-bottom:4px;">'+
-        '<div style="display:flex;align-items:center;gap:10px;">'+
-          '<span style="font-size:12px;color:#8E8E93;">Statut :</span>'+
-          '<div class="dot '+(actSt[i]==="ok"?"ok":"")+'" id="dok'+i+'" onclick="toggleAct('+i+','ok')" style="cursor:pointer;">✓</div>'+
-          '<div class="dot '+(actSt[i]==="nok"?"nok":"")+'" id="dnok'+i+'" onclick="toggleAct('+i+','nok')" style="cursor:pointer;">✗</div>'+
-          '<span id="act-st-lbl-'+i+'" style="font-size:12px;color:#8E8E93;">'+(actSt[i]==="ok"?"Validé":actSt[i]==="nok"?"Non fait":"—")+'</span>'+
+        '<input type="checkbox" onchange="toggleActRow(this,'+i+')" '+
+        'style="width:22px;height:22px;flex-shrink:0;cursor:pointer;accent-color:#2E86AB;">'+
+        '<div style="flex:1;min-width:0;">'+
+          '<div class="atxt">'+(obj.tache||a)+'</div>'+
+          (obj.impact?'<div style="font-size:11px;color:#E07B27;margin-top:1px;">'+(obj.impact)+'</div>':'')+
+        '</div>'+
+        '<div class="adots" id="adots'+i+'" style="display:none;">'+
+          '<div class="dot '+(actSt[i]==="ok"?"ok":"")+'" id="dok'+i+'" onclick="toggleAct('+i+',\'ok\')">✓</div>'+
+          '<div class="dot '+(actSt[i]==="nok"?"nok":"")+'" id="dnok'+i+'" onclick="toggleAct('+i+',\'nok\')">✗</div>'+
         '</div>';
       al.appendChild(d);
     });
